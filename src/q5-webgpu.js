@@ -1586,33 +1586,31 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 	$._rectShaderCode =
 		$._baseShaderCode +
 		/* wgsl */ `
-struct Rect {
-	center: vec2f,
-	extents: vec2f,
-	roundedRadius: f32,
-	strokeWeight: f32,
-	fillIndex: f32,
-	strokeIndex: f32,
-	matrixIndex: f32,
-	padding0: f32, // can't use vec3f for alignment
-	padding1: vec2f,
-	padding2: vec4f
-};
+	struct Rect {
+		center: vec2f,
+		extents: vec2f,
+		cornerRadii: vec4f,
+		strokeWeight: f32,
+		fillIndex: f32,
+		strokeIndex: f32,
+		matrixIndex: f32,
+		padding: vec4f
+	};
 
 struct VertexParams {
 	@builtin(vertex_index) vertIndex: u32,
 	@builtin(instance_index) instIndex: u32
 };
 
-struct FragParams {
-	@builtin(position) position: vec4f,
-	@location(0) local: vec2f,
-	@location(1) extents: vec2f,
-	@location(2) roundedRadius: f32,
-	@location(3) strokeWeight: f32,
-	@location(4) fill: vec4f,
-	@location(5) stroke: vec4f,
-	@location(6) blend: vec4f
+	struct FragParams {
+		@builtin(position) position: vec4f,
+		@location(0) local: vec2f,
+		@location(1) extents: vec2f,
+		@location(2) cornerRadii: vec4f,
+		@location(3) strokeWeight: f32,
+		@location(4) fill: vec4f,
+		@location(5) stroke: vec4f,
+		@location(6) blend: vec4f
 };
 
 @group(0) @binding(0) var<uniform> q: Q5;
@@ -1647,13 +1645,13 @@ fn vertexMain(v: VertexParams) -> FragParams {
 
 	let local = pos - rect.center;
 
-	var f: FragParams;
-	f.position = transformVertex(pos, rect.matrixIndex);
+		var f: FragParams;
+		f.position = transformVertex(pos, rect.matrixIndex);
 
-	f.local = local;
-	f.extents = rect.extents;
-	f.roundedRadius = rect.roundedRadius;
-	f.strokeWeight = rect.strokeWeight;
+		f.local = local;
+		f.extents = rect.extents;
+		f.cornerRadii = rect.cornerRadii;
+		f.strokeWeight = rect.strokeWeight;
 
 	let fill = colors[i32(rect.fillIndex)];
 	let stroke = colors[i32(rect.strokeIndex)];
@@ -1669,18 +1667,30 @@ fn vertexMain(v: VertexParams) -> FragParams {
 	return f;
 }
 
-fn sdRoundRect(p: vec2f, extents: vec2f, radius: f32) -> f32 {
-	let q = abs(p) - extents + vec2f(radius);
-	return length(max(q, vec2f(0.0))) - radius + min(max(q.x, q.y), 0.0);
-}
+	fn sdRoundRect(p: vec2f, extents: vec2f, radius: f32) -> f32 {
+		let q = abs(p) - extents + vec2f(radius);
+		return length(max(q, vec2f(0.0))) - radius + min(max(q.x, q.y), 0.0);
+	}
 
-@fragment
-fn fragMain(f: FragParams) -> @location(0) vec4f {
-	let dist = select(
-		max(abs(f.local.x) - f.extents.x, abs(f.local.y) - f.extents.y), // sharp
-		sdRoundRect(f.local, f.extents, f.roundedRadius),                  // rounded
-		f.roundedRadius > 0.0
-	);
+	fn getCornerRadius(p: vec2f, radii: vec4f) -> f32 {
+		let top = select(radii.x, radii.y, p.x > 0.0);
+		let bottom = select(radii.w, radii.z, p.x > 0.0);
+		return select(top, bottom, p.y > 0.0);
+	}
+
+	fn hasCornerRadii(radii: vec4f) -> bool {
+		return max(max(radii.x, radii.y), max(radii.z, radii.w)) > 0.0;
+	}
+
+	@fragment
+	fn fragMain(f: FragParams) -> @location(0) vec4f {
+		let rounded = hasCornerRadii(f.cornerRadii);
+		let radius = getCornerRadius(f.local, f.cornerRadii);
+		let dist = select(
+			max(abs(f.local.x) - f.extents.x, abs(f.local.y) - f.extents.y), // sharp
+			sdRoundRect(f.local, f.extents, radius),                           // rounded
+			rounded
+		);
 
 	// fill only
 	if (f.fill.a != 0.0 && f.strokeWeight == 0.0) {
@@ -1774,28 +1784,53 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 	});
 
-	let rectBindGroup = Q5.device.createBindGroup({
-		layout: rectBindGroupLayout,
-		entries: [{ binding: 0, resource: { buffer: rectBuffer } }]
-	});
+		let rectBindGroup = Q5.device.createBindGroup({
+			layout: rectBindGroupLayout,
+			entries: [{ binding: 0, resource: { buffer: rectBuffer } }]
+		});
 
-	function addRect(x, y, hw, hh, roundedRadius, strokeW, fillRect) {
-		let s = rectStack,
-			i = rectStackIdx;
+		let rectRadiusCache = [0, 0, 0, 0];
 
-		s[i] = x;
-		s[i + 1] = y;
-		s[i + 2] = hw;
-		s[i + 3] = hh;
-		s[i + 4] = roundedRadius;
-		s[i + 5] = strokeW;
-		s[i + 6] = fillRect;
-		s[i + 7] = strokeIdx;
-		s[i + 8] = matrixIdx;
+		function calcRectRadii(tl, tr, br, bl) {
+			if (tl === undefined) {
+				rectRadiusCache[0] = 0;
+				rectRadiusCache[1] = 0;
+				rectRadiusCache[2] = 0;
+				rectRadiusCache[3] = 0;
+			} else if (tr === undefined) {
+				rectRadiusCache[0] = tl;
+				rectRadiusCache[1] = tl;
+				rectRadiusCache[2] = tl;
+				rectRadiusCache[3] = tl;
+			} else {
+				rectRadiusCache[0] = tl;
+				rectRadiusCache[1] = tr;
+				rectRadiusCache[2] = br ?? 0;
+				rectRadiusCache[3] = bl ?? 0;
+			}
+			return rectRadiusCache;
+		}
 
-		rectStackIdx += 16;
-		drawStack.push(rectPL, 1);
-	}
+		function addRect(x, y, hw, hh, cornerRadii, strokeW, fillRect) {
+			let s = rectStack,
+				i = rectStackIdx;
+
+			s[i] = x;
+			s[i + 1] = y;
+			s[i + 2] = hw;
+			s[i + 3] = hh;
+			s[i + 4] = cornerRadii[0];
+			s[i + 5] = cornerRadii[1];
+			s[i + 6] = cornerRadii[2];
+			s[i + 7] = cornerRadii[3];
+			s[i + 8] = strokeW;
+			s[i + 9] = fillRect;
+			s[i + 10] = strokeIdx;
+			s[i + 11] = matrixIdx;
+
+			rectStackIdx += 16;
+			drawStack.push(rectPL, 1);
+		}
 
 	let _rectMode = 'corner';
 
@@ -1831,16 +1866,17 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 		return rectModeCache;
 	}
 
-	$.rect = (x, y, w, h, rr = 0) => {
-		if (matrixDirty) saveMatrix();
+		$.rect = (x, y, w, h = w, tl, tr, br, bl) => {
+			if (matrixDirty) saveMatrix();
 
-		let hw, hh;
-		[x, y, hw, hh] = applyRectMode(x, y, w, h);
+			let cornerRadii = calcRectRadii(tl, tr, br, bl);
+			let hw, hh;
+			[x, y, hw, hh] = applyRectMode(x, y, w, h);
 
-		addRect(x, y, hw, hh, rr, doStroke ? sw : 0, doFill ? fillIdx : 0);
-	};
+			addRect(x, y, hw, hh, cornerRadii, doStroke ? sw : 0, doFill ? fillIdx : 0);
+		};
 
-	$.square = (x, y, s, rr) => $.rect(x, y, s, s, rr);
+		$.square = (x, y, s, tl, tr, br, bl) => $.rect(x, y, s, s, tl, tr, br, bl);
 
 	function addCapsule(x1, y1, x2, y2, r, strokeW, fillCapsule) {
 		let dx = x2 - x1,
@@ -1861,7 +1897,7 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 
 		if (matrixDirty) saveMatrix();
 
-		addRect(0, 0, len / 2 + r, r, r, strokeW, fillCapsule);
+			addRect(0, 0, len / 2 + r, r, calcRectRadii(r), strokeW, fillCapsule);
 
 		$.popMatrix();
 	}
@@ -2197,7 +2233,7 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 
 		// if the point stroke size is a single pixel (or smaller), use a rectangle
 		if (hswScaled <= 0.5) {
-			addRect(x, y, hsw, hsw, 0, sw, 0);
+				addRect(x, y, hsw, hsw, calcRectRadii(0), sw, 0);
 		} else {
 			// dimensions of the point needs to be set to half the stroke weight
 			addEllipse(x, y, hsw, hsw, 0, TAU, sw, 0);
