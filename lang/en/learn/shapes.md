@@ -53,6 +53,10 @@ ellipse(100, 50, 160, 80);
 
 Draws a rectangle or a rounded rectangle.
 
+Also accepts 8 parameters to specify a
+corner radius for each corner, in the order:
+top-left, top-right, bottom-right, bottom-left.
+
 ```
 @param {number} x x-coordinate
 @param {number} y y-coordinate
@@ -69,7 +73,7 @@ background(0.8);
 
 rect(-70, -80, 40, 60);
 rect(-20, -30, 40, 60, 10);
-rect(30, 20, 40, 60, 30);
+rect(30, 20, 40, 60, 20, 4, 0, 8);
 ```
 
 ### c2d
@@ -80,12 +84,16 @@ background(200);
 
 rect(30, 20, 40, 60);
 rect(80, 70, 40, 60, 10);
-rect(130, 120, 40, 60, 30, 2, 8, 20);
+rect(130, 120, 40, 60, 20, 4, 0, 8);
 ```
 
 ## square
 
 Draws a square or a rounded square.
+
+Also accepts 7 parameters to specify a
+corner radius for each corner, in the order:
+top-left, top-right, bottom-right, bottom-left.
 
 ```
 @param {number} x x-coordinate
@@ -102,7 +110,7 @@ background(0.8);
 
 square(-70, -70, 40);
 square(-20, -20, 40, 10);
-square(30, 30, 40, 30);
+square(30, 30, 40, 20, 4, 0, 8);
 ```
 
 ### c2d
@@ -113,7 +121,7 @@ background(200);
 
 square(30, 30, 40);
 square(80, 80, 40, 10);
-square(130, 130, 40, 30, 2, 8, 20);
+square(130, 130, 40, 20, 4, 0, 8);
 ```
 
 ## point

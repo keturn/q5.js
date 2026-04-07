@@ -85,6 +85,10 @@ declare global {
 
 	/** 🧑‍🎨
 	 * Draws a rectangle or a rounded rectangle.
+	 * 
+	 * Also accepts 8 parameters to specify a
+	 * corner radius for each corner, in the order:
+	 * top-left, top-right, bottom-right, bottom-left.
 	 * @param {number} x x-coordinate
 	 * @param {number} y y-coordinate
 	 * @param {number} w width of the rectangle
@@ -96,12 +100,16 @@ declare global {
 	 * 
 	 * rect(-70, -80, 40, 60);
 	 * rect(-20, -30, 40, 60, 10);
-	 * rect(30, 20, 40, 60, 30);
+	 * rect(30, 20, 40, 60, 20, 4, 0, 8);
 	 */
 	function rect(x: number, y: number, w: number, h: number, rounded?: number): void;
 
 	/** 🧑‍🎨
 	 * Draws a square or a rounded square.
+	 * 
+	 * Also accepts 7 parameters to specify a
+	 * corner radius for each corner, in the order:
+	 * top-left, top-right, bottom-right, bottom-left.
 	 * @param {number} x x-coordinate
 	 * @param {number} y y-coordinate
 	 * @param {number} size size of the sides of the square
@@ -112,7 +120,7 @@ declare global {
 	 * 
 	 * square(-70, -70, 40);
 	 * square(-20, -20, 40, 10);
-	 * square(30, 30, 40, 30);
+	 * square(30, 30, 40, 20, 4, 0, 8);
 	 */
 	function square(x: number, y: number, size: number, rounded?: number): void;
 

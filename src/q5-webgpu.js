@@ -1784,53 +1784,48 @@ fn vertexMain(v: VertexParams) -> FragParams {
 		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
 	});
 
-		let rectBindGroup = Q5.device.createBindGroup({
-			layout: rectBindGroupLayout,
-			entries: [{ binding: 0, resource: { buffer: rectBuffer } }]
-		});
+	let rectBindGroup = Q5.device.createBindGroup({
+		layout: rectBindGroupLayout,
+		entries: [{ binding: 0, resource: { buffer: rectBuffer } }]
+	});
 
-		let rectRadiusCache = [0, 0, 0, 0];
+	let rectRadiusCache = [0, 0, 0, 0];
 
-		function calcRectRadii(tl, tr, br, bl) {
-			if (tl === undefined) {
-				rectRadiusCache[0] = 0;
-				rectRadiusCache[1] = 0;
-				rectRadiusCache[2] = 0;
-				rectRadiusCache[3] = 0;
-			} else if (tr === undefined) {
-				rectRadiusCache[0] = tl;
-				rectRadiusCache[1] = tl;
-				rectRadiusCache[2] = tl;
-				rectRadiusCache[3] = tl;
-			} else {
-				rectRadiusCache[0] = tl;
-				rectRadiusCache[1] = tr;
-				rectRadiusCache[2] = br ?? 0;
-				rectRadiusCache[3] = bl ?? 0;
-			}
-			return rectRadiusCache;
+	function calcRectRadii(tl, tr, br, bl) {
+		if (tl === undefined) {
+			tl = tr = br = bl = 0;
+		} else if (tr === undefined) {
+			tr = tl;
+			br = tl;
+			bl = tl;
 		}
+		rectRadiusCache[0] = tl;
+		rectRadiusCache[1] = tr;
+		rectRadiusCache[2] = br;
+		rectRadiusCache[3] = bl;
+		return rectRadiusCache;
+	}
 
-		function addRect(x, y, hw, hh, cornerRadii, strokeW, fillRect) {
-			let s = rectStack,
-				i = rectStackIdx;
+	function addRect(x, y, hw, hh, cornerRadii, strokeW, fillRect) {
+		let s = rectStack,
+			i = rectStackIdx;
 
-			s[i] = x;
-			s[i + 1] = y;
-			s[i + 2] = hw;
-			s[i + 3] = hh;
-			s[i + 4] = cornerRadii[0];
-			s[i + 5] = cornerRadii[1];
-			s[i + 6] = cornerRadii[2];
-			s[i + 7] = cornerRadii[3];
-			s[i + 8] = strokeW;
-			s[i + 9] = fillRect;
-			s[i + 10] = strokeIdx;
-			s[i + 11] = matrixIdx;
+		s[i] = x;
+		s[i + 1] = y;
+		s[i + 2] = hw;
+		s[i + 3] = hh;
+		s[i + 4] = cornerRadii[0];
+		s[i + 5] = cornerRadii[1];
+		s[i + 6] = cornerRadii[2];
+		s[i + 7] = cornerRadii[3];
+		s[i + 8] = strokeW;
+		s[i + 9] = fillRect;
+		s[i + 10] = strokeIdx;
+		s[i + 11] = matrixIdx;
 
-			rectStackIdx += 16;
-			drawStack.push(rectPL, 1);
-		}
+		rectStackIdx += 16;
+		drawStack.push(rectPL, 1);
+	}
 
 	let _rectMode = 'corner';
 
@@ -1866,17 +1861,17 @@ fn vertexMain(v: VertexParams) -> FragParams {
 		return rectModeCache;
 	}
 
-		$.rect = (x, y, w, h = w, tl, tr, br, bl) => {
-			if (matrixDirty) saveMatrix();
+	$.rect = (x, y, w, h = w, tl, tr, br, bl) => {
+		if (matrixDirty) saveMatrix();
 
-			let cornerRadii = calcRectRadii(tl, tr, br, bl);
-			let hw, hh;
-			[x, y, hw, hh] = applyRectMode(x, y, w, h);
+		let cornerRadii = calcRectRadii(tl, tr, br, bl);
+		let hw, hh;
+		[x, y, hw, hh] = applyRectMode(x, y, w, h);
 
-			addRect(x, y, hw, hh, cornerRadii, doStroke ? sw : 0, doFill ? fillIdx : 0);
-		};
+		addRect(x, y, hw, hh, cornerRadii, doStroke ? sw : 0, doFill ? fillIdx : 0);
+	};
 
-		$.square = (x, y, s, tl, tr, br, bl) => $.rect(x, y, s, s, tl, tr, br, bl);
+	$.square = (x, y, s, tl, tr, br, bl) => $.rect(x, y, s, s, tl, tr, br, bl);
 
 	function addCapsule(x1, y1, x2, y2, r, strokeW, fillCapsule) {
 		let dx = x2 - x1,
@@ -1897,7 +1892,7 @@ fn vertexMain(v: VertexParams) -> FragParams {
 
 		if (matrixDirty) saveMatrix();
 
-			addRect(0, 0, len / 2 + r, r, calcRectRadii(r), strokeW, fillCapsule);
+		addRect(0, 0, len / 2 + r, r, calcRectRadii(r), strokeW, fillCapsule);
 
 		$.popMatrix();
 	}
@@ -2233,7 +2228,7 @@ fn fragMain(f: FragParams) -> @location(0) vec4f {
 
 		// if the point stroke size is a single pixel (or smaller), use a rectangle
 		if (hswScaled <= 0.5) {
-				addRect(x, y, hsw, hsw, calcRectRadii(0), sw, 0);
+			addRect(x, y, hsw, hsw, calcRectRadii(0), sw, 0);
 		} else {
 			// dimensions of the point needs to be set to half the stroke weight
 			addEllipse(x, y, hsw, hsw, 0, TAU, sw, 0);

@@ -45,7 +45,7 @@ p5.js is licensed under the LGPLv2, small sections of p5' code directly copied i
 
 ## Credits
 
-This project aims to continue the legacy of the incredible work done by [Ben Fry](https://benfry.com) and [Casey Reas](https://x.com/REAS) on Java [Processing](https://processingfoundation.org/), [Lauren McCarthy](http://lauren-mccarthy.com)'s work on [p5.js](https://p5js.org), and all contributors to these projects.
+q5 was inspired by the incredible work of [Ben Fry](https://benfry.com) and [Casey Reas](https://x.com/REAS) on Java [Processing](https://processingfoundation.org/) from 2001 to 2023, [Lauren McCarthy](http://lauren-mccarthy.com)'s work on [p5.js](https://p5js.org) from 2013 to 2019, and all contributors to these projects.
 
 ## Code Excerpt Sources
 
@@ -74,7 +74,6 @@ https://github.com/processing/p5.js/blob/v1.10.0/src/math/p5.Vector.js#L2803
 p5.js random:
 https://github.com/processing/p5.js/blob/1.1.9/src/math/noise.js
 
-[p5]: https://p5js.org
 [p5.js]: https://p5js.org
 [Processing]: https://processing.org
 [p5.sound]: https://archive.p5js.org/reference/#/libraries/p5.sound
