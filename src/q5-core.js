@@ -1,6 +1,6 @@
 /**
  * q5.js
- * @version 4.4
+ * @version 4.5
  * @author quinton-ashley
  * @contributors evanalulu, Tezumie, ormaq, Dukemz, LingDong-
  * @license LGPL-3.0
@@ -298,6 +298,7 @@ function Q5(scope, parent, renderer) {
 			if (Q5[name]) $[name] = Q5[name];
 			else {
 				Object.defineProperty(Q5, name, {
+					configurable: true,
 					get: () => $[name],
 					set: (fn) => ($[name] = fn)
 				});
@@ -491,7 +492,7 @@ if (typeof window == 'object') {
 	window.addEventListener('pagehide', cleanup);
 } else global.window = 0;
 
-Q5.version = Q5.VERSION = '4.4';
+Q5.version = Q5.VERSION = '4.5';
 
 if (typeof document == 'object') {
 	document.addEventListener('DOMContentLoaded', () => {
