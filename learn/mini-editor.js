@@ -307,9 +307,10 @@ q.update = () => {
 			});
 		}
 
-		const func = new Function(
-			'q',
-			`
+		try {
+			const func = new Function(
+				'q',
+				`
 //# sourceURL=${this.container.id}.js
 return (async () => {
 	with (q) {
@@ -319,9 +320,8 @@ ${userCode}
 	}
 })();
 `
-		);
+			);
 
-		try {
 			await func(q);
 		} catch (e) {
 			console.error('Error executing user code:', e);
@@ -356,18 +356,23 @@ ${userCode}
 	}
 
 	handleError(e) {
-		let lineNo = null;
+		if (this.q5Instance) {
+			this.q5Instance.remove();
+			this.q5Instance = null;
+		}
+
+		let lineNum = null;
 		if (e.stack) {
 			const match = e.stack.match(new RegExp(`\${this.container.id}\\\\.js:(\\\\d+)`));
 			if (match) {
-				lineNo = parseInt(match[1]) - 3;
+				lineNum = parseInt(match[1]) - 3;
 			}
 		}
 
-		if (lineNo) {
+		if (lineNum) {
 			this.errorDecorations = this.editor.deltaDecorations(this.errorDecorations || [], [
 				{
-					range: new monaco.Range(lineNo, 1, lineNo, 1),
+					range: new monaco.Range(lineNum, 1, lineNum, 1),
 					options: {
 						isWholeLine: true,
 						className: 'mie-error-line',
@@ -377,9 +382,9 @@ ${userCode}
 			]);
 		}
 
-		this.outputEl.innerHTML += `<div style="color: #ff6b6b; font-family: monospace; margin-top: 10px; border-top: 1px solid #444; padding-top: 10px;">${
+		this.outputEl.innerHTML += `<div style="color: #ff6b6b; font-family: monospace; padding: 0 8px;">${
 			e.message
-		}${lineNo ? ' (Line ' + lineNo + ')' : ''}</div>`;
+		}${lineNum ? ' (Line ' + lineNum + ')' : ''}</div>`;
 	}
 
 	moveFocus(step) {

@@ -322,6 +322,7 @@ function Q5(scope, parent, renderer) {
 		await runHooks('presetup');
 
 		readyResolve();
+		if ($._removed) return;
 
 		if (t.preload || $.preload) {
 			wrapWithFES('preload');
@@ -353,9 +354,9 @@ function Q5(scope, parent, renderer) {
 			})
 		]);
 
-		if (!$._disablePreload) {
-			await $.loadAll();
-		}
+		if ($._removed) return;
+		if (!$._disablePreload) await $.loadAll();
+		if ($._removed) return;
 
 		$.setup ??= t.setup || (() => {});
 		wrapWithFES('setup');
@@ -367,10 +368,12 @@ function Q5(scope, parent, renderer) {
 		millisStart = performance.now();
 		await $.setup();
 		$._setupDone = true;
+
+		if ($._removed) return;
 		if ($.ctx === null) $.createCanvas(200, 200);
 		await runHooks('postsetup');
 
-		if ($.frameCount) return;
+		if ($.frameCount || $._removed) return;
 
 		$._lastFrameTime = performance.now() - 15;
 		raf(_draw);

@@ -77,7 +77,7 @@ Q5.modules.canvas = ($, q) => {
 				if (!el) {
 					// reattach canvas to the DOM
 					document.getElementById(c.id)?.remove();
-					addCanvas();
+					$._addCanvas();
 				}
 
 				if (window.IntersectionObserver) {
@@ -208,7 +208,7 @@ Q5.modules.canvas = ($, q) => {
 			}
 		};
 
-		function addCanvas() {
+		$._addCanvas = () => {
 			let el = $._parent;
 			el ??= document.getElementsByTagName('main')[0];
 			if (!el) {
@@ -223,8 +223,8 @@ Q5.modules.canvas = ($, q) => {
 					if (document.body) document.body.appendChild(el);
 				});
 			}
-		}
-		addCanvas();
+		};
+		$._addCanvas();
 	}
 
 	$.resizeCanvas = (w, h) => {
